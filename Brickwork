@@ -1,0 +1,171 @@
+import java.io.IOException;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        String[] dimensions = scanner.nextLine().split(" ");
+        int r = Integer.parseInt(dimensions[0]);
+        int c = Integer.parseInt(dimensions[1]);
+//        First layer initialization
+        int[][] firstLayer = new int[r][c];
+        int currentRow = 0;
+        int rows = r;
+        while (rows-- > 0) {
+            String[] currentRowFirstLayer = scanner.nextLine().split(" ");
+            
+            // Validating that the current row from input has the same length as the given dimension.
+            if (isValid(r, c, firstLayer)) {
+                for (int i = 0; i < c; i++) {
+                    // Validating that all brick are marked with whole numbers.
+                    if (currentRowFirstLayer[i].contains(".")) {
+                        throw new IOException("Input is not valid.");
+                    }
+                    // Validating that there is no brick marked with 0.
+                    else if (Integer.parseInt(currentRowFirstLayer[i]) == 0) {
+                        throw new IOException("Input is not valid.");
+                    } else {
+                        firstLayer[currentRow][i] = Integer.parseInt(currentRowFirstLayer[i]);
+                    }
+                }
+                currentRow++;
+            }
+        }
+
+//        Validation of input: M, N and first layer.
+//        I think there will always be a solution if input is valid and both dimensions M and N are even numbers.
+        if (isValid(r, c, firstLayer)) {
+            int[][] secondLayer = createSecondLayer(firstLayer.length, firstLayer[0].length, firstLayer);
+            prettyPrinting(secondLayer);
+        } else {
+            throw new IOException("Input is not valid.");
+        }
+
+
+    }
+
+    //    Second layer initialization.
+    private static int[][] createSecondLayer(int rows, int cols, int[][] firstLayer) {
+        int[][] secondLayer = new int[rows][cols];
+
+        int maxNum = (firstLayer.length * firstLayer[0].length) / 2;
+        List<Integer> numsUsed = new ArrayList<>();
+
+        for (int i = 1; i <= maxNum; i++) {
+            numsUsed.add(i);
+        }
+
+        for (int r = 0; r < firstLayer.length - 1; r = r + 2) {
+            for (int c = 0; c < firstLayer[r].length - 1; c = c + 2) {
+                if (firstLayer[r][c] == firstLayer[r][c + 1]) {
+                    int nextNum = numsUsed.get(numsUsed.size() - 1);
+                    secondLayer[r][c] = nextNum;
+                    secondLayer[r + 1][c] = nextNum;
+
+                    secondLayer[r][c + 1] = nextNum - 1;
+                    secondLayer[r + 1][c + 1] = nextNum - 1;
+
+                    numsUsed.remove(numsUsed.size() - 1);
+                    numsUsed.remove(numsUsed.size() - 1);
+                } else {
+                    int nextNum = numsUsed.get(numsUsed.size() - 1);
+                    secondLayer[r][c] = nextNum;
+                    secondLayer[r][c + 1] = nextNum;
+
+                    secondLayer[r + 1][c] = nextNum - 1;
+                    secondLayer[r + 1][c + 1] = nextNum - 1;
+
+                    numsUsed.remove(numsUsed.size() - 1);
+                    numsUsed.remove(numsUsed.size() - 1);
+                }
+            }
+        }
+        return secondLayer;
+
+    }
+
+    //    Printing method.
+    private static void prettyPrinting(int[][] secondLayer) {
+//         Header border.
+        for (int i = 0; i < ((secondLayer[0].length) * 2) + 1; i++) {
+            System.out.print("*");
+        }
+        System.out.println();
+//        Horizontal borders printing
+        for (int i = 0; i < secondLayer.length; i++) {
+            System.out.print("*");
+            for (int j = 0; j < secondLayer[i].length; j++) {
+                if ((j + 1) == secondLayer[i].length) {
+                    System.out.print(secondLayer[i][j] + "*");
+                    break;
+                }
+                if (secondLayer[i][j] == secondLayer[i][j + 1]) {
+                    System.out.print(secondLayer[i][j] + " ");
+                } else {
+                    System.out.print(secondLayer[i][j] + "*");
+                }
+            }
+            System.out.println();
+//           Vertical borders creating
+            if (i < secondLayer.length - 1) {
+                for (int c = 0; c < secondLayer[i].length; c++) {
+                    if (secondLayer[i][c] == secondLayer[i + 1][c]) {
+                        if (c == 0) {
+                            System.out.print("* *");
+                        } else {
+                            System.out.print(" ");
+                            System.out.print("*");
+                        }
+                    } else if (c == 0) {
+                        System.out.print("***");
+                    } else {
+                        System.out.print("**");
+                    }
+                }
+                System.out.println();
+            }
+        }
+//        Footer border
+        for (int i = 0; i < ((secondLayer[0].length) * 2) + 1; i++) {
+            System.out.print("*");
+        }
+    }
+
+    //       Validation method logic.
+    private static boolean isValid(int r, int c, int[][] firstLayer) {
+        if (r % 2 != 0 || c % 2 != 0) {
+            return false;
+        }
+        if (r == 0 || c == 0) {
+            return false;
+        }
+        if (r >= 100 || c >= 100) {
+            return false;
+        }
+        if (firstLayer.length != r) {
+            return false;
+        }
+        for (int i = 0; i < firstLayer.length; i++) {
+            if (firstLayer[i].length != c) {
+                return false;
+            }
+        }
+//      Validating that there is no brick spanning 3 rows/ columns.
+        Map<Integer, Integer> numsCounted = new LinkedHashMap<>();
+        for (int i = 0; i < firstLayer.length; i++) {
+            for (int j = 0; j < firstLayer[i].length; j++) {
+                if (numsCounted.containsKey(firstLayer[i][j])) {
+                    numsCounted.put(firstLayer[i][j], numsCounted.get(firstLayer[i][j]) + 1);
+                } else {
+                    numsCounted.put(firstLayer[i][j], 1);
+                }
+            }
+        }
+        for (Map.Entry<Integer, Integer> entry : numsCounted.entrySet()) {
+            if (entry.getValue() != 2) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
